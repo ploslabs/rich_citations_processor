@@ -33,7 +33,11 @@ module RichCitationsProcessor
 
       def resolve_references!(ref_collection)
         texts = ref_collection.map do |ref| search_text_for(ref) end
-        response = HTTPUtilities.post(API_URL, texts, :json)
+        raw_response = @httpclient.post_content(API_URL,
+                                                MultiJson.dump(texts),
+                                                'Accept' => 'application/json',
+                                                'Content-Type' => 'application/json')
+        response = MultiJson.load(raw_response)
         return unless response['query_ok']
 
         response['results'].each_with_index do |result, i|

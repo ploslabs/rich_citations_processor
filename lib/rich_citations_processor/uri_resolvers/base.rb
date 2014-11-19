@@ -32,6 +32,7 @@ module RichCitationsProcessor
       def initialize(references:references, paper:paper)
         @paper      = paper
         @references = references
+        @httpclient = HTTPClient.new
       end
 
       def resolve!
