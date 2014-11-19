@@ -22,29 +22,25 @@ module RichCitationsProcessor
   module API
 
     class PLOS
-
+      @httpclient = HTTPClient.new
+      
       # Given the DOI of a PLOS paper, downloads the XML and parses it
       # Returns an XML document
 
       def self.get_nlm_document(doi)
-        url = NLM_DOCUMENT_URL % [doi]
-        HTTPUtilities.get(url, :xml)
-
-      rescue Net::HTTPFatalError => ex
-        raise unless ex.response.code == '500'
-        #todo Need a better way to detect invalid docs than 500 errors
+        Nokogiri::XML.parse(@httpclient.get_content('http://www.plosone.org/article/fetchObjectAttachment.action',
+                                                    { 'uri' => format('info:doi/%s', doi),
+                                                      'representation' => 'XML' },
+                                                    'Accept' => 'application/xml'))
+      rescue HTTPClient::BadResponseError => resp
+        raise unless resp.res.code == 500
         nil
       end
 
       def self.get_web_page(doi)
         doi = URI::DOI.new(doi, source:'internal') unless doi.is_a?(URI::Base)
-        HTTPUtilities.get(doi.full_uri, :html)
+        Nokogiri::HTML.parse(@httpclient.get_content(doi.full_uri, {}, 'Accept' => 'text/html'))
       end
-
-      private
-
-      NLM_DOCUMENT_URL = 'http://www.plosone.org/article/fetchObjectAttachment.action?uri=info:doi/%s&representation=XML'
-
     end
   end
 end
